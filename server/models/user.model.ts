@@ -2,7 +2,9 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-const userSchema = new mongoose.Schema(
+import { UserDocument as UserInterface } from '../interfaces/user.interface';
+
+const userSchema = new mongoose.Schema<UserInterface>(
   {
     username: {
       type: String,
@@ -52,17 +54,20 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function (this: UserInterface, next) {
   if (this.isModified('password'))
     this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-userSchema.methods.isPasswordCorrect = async function (password: string) {
+userSchema.methods.isPasswordCorrect = async function (
+  this: UserInterface,
+  password: string
+) {
   return await bcrypt.compare(password, this.password);
 };
 
-userSchema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function (this: UserInterface) {
   return jwt.sign(
     {
       _id: this._id,
@@ -75,7 +80,8 @@ userSchema.methods.generateAccessToken = function () {
     }
   );
 };
-userSchema.methods.generateRefreshToken = function () {
+
+userSchema.methods.generateRefreshToken = function (this: UserInterface) {
   return jwt.sign(
     {
       _id: this._id
@@ -87,4 +93,4 @@ userSchema.methods.generateRefreshToken = function () {
   );
 };
 
-export const User = mongoose.model('User', userSchema);
+export const User = mongoose.model<UserInterface>('User', userSchema);
