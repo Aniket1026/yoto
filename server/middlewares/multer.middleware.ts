@@ -1,9 +1,7 @@
 import { Request } from 'express';
 import multer from 'multer';
 
-interface File {
-  originalname: string;
-}
+type File = Express.Multer.File;
 
 const storage = multer.diskStorage({
   destination: function (req: Request, file:File, cb) {
