@@ -3,7 +3,9 @@ import cors from 'cors';
 import { config } from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './db/db';
+import { user } from './routes/user.route';
 
+config();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -15,7 +17,8 @@ app.use(
   })
 );
 
-config();
+app.use('/api/v1',user)
+
 connectDB().then(() => {
   app.listen(process.env.PORT, () => {
     console.log(`Server listening on port ${process.env.PORT} ...`);
