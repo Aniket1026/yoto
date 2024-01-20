@@ -5,6 +5,7 @@ import { apiError } from '../utils/apiError';
 import { uploadOnCloudinary } from '../utils/cloudinary';
 import { UserDocument } from '../interfaces/user.interface';
 import { apiResponse } from '../utils/apiResponse';
+import { UserRequest } from '../interfaces/request.interface';
 
 const generateAccessAndRefreshToken = async (user: UserDocument) => {
   try {
@@ -61,13 +62,6 @@ export const registerUser = asyncHandler(
 
 export const loginUser = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    // get user details
-    // check if all required fields are present
-    // check if user exists
-    // check if password is correct
-    // generate token
-    // send token to client
-
     const { email, password } = req.body;
     if (!email || !password)
       throw new apiError('required fields are missing', 400);
@@ -100,5 +94,27 @@ export const loginUser = asyncHandler(
           'User logged in successfully'
         )
       );
+  }
+);
+
+export const logoutUser = asyncHandler(
+  async (req: UserRequest, res: Response): Promise<void> => {
+    // clear the cookies
+    // clear the refreshtoken from the database
+    const user = req.user;
+    if (!user) throw new apiError('Unauthorized request', 401);
+
+    user.refreshToken = undefined;
+    await user.save({ validateBeforeSave: false });
+    const options = {
+      httpOnly: true,
+      secure: true
+    };
+    
+    res
+      .status(200)
+      .clearCookie('refreshToken', options)
+      .clearCookie('accessToken', options)
+      .json(new apiResponse({}, 200, 'User logged out successfully'));
   }
 );
