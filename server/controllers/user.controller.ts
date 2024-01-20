@@ -1,5 +1,7 @@
-import { asyncHandler } from '../utils/asyncHandler';
 import { Request, Response } from 'express';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+
+import { asyncHandler } from '../utils/asyncHandler';
 import { User } from '../models/user.model';
 import { apiError } from '../utils/apiError';
 import { uploadOnCloudinary } from '../utils/cloudinary';
@@ -110,11 +112,58 @@ export const logoutUser = asyncHandler(
       httpOnly: true,
       secure: true
     };
-    
+
     res
       .status(200)
       .clearCookie('refreshToken', options)
       .clearCookie('accessToken', options)
       .json(new apiResponse({}, 200, 'User logged out successfully'));
+  }
+);
+
+export const accessRefreshToken = asyncHandler(
+  async (req: UserRequest, res: Response): Promise<void> => {
+    try {
+      const incomingRefreshToken =
+        req.cookies?.refreshToken || req.body?.refreshToken;
+      if (!incomingRefreshToken)
+        throw new apiError('Unauthorized request', 401);
+
+      const decodedToken = await jwt.verify(
+        incomingRefreshToken,
+        process.env.REFRESH_TOKEN_SECRET!
+      );
+
+      if (!decodedToken) throw new apiError('Invalid token', 401);
+
+      const user = await User.findById((decodedToken as JwtPayload)._id);
+      if (!user) throw new apiError('Invalid token', 401);
+
+      if (user.refreshToken !== incomingRefreshToken) {
+        throw new apiError('Refresh token is expired', 401);
+      }
+
+      const { refreshToken, accessToken } =
+        await generateAccessAndRefreshToken(user);
+
+      const options = {
+        httpOnly: true,
+        secure: true
+      };
+
+      res
+        .status(200)
+        .cookie('refreshToken', refreshToken, options)
+        .cookie('accessToken', accessToken, options)
+        .json(
+          new apiResponse(
+            { accessToken, refreshToken },
+            200,
+            'Access token generated successfully'
+          )
+        );
+    } catch (error) {
+      throw new apiError(`Error in access refresh Token ${error}`, 404);
+    }
   }
 );

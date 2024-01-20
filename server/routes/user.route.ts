@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  accessRefreshToken,
   loginUser,
   logoutUser,
   registerUser
@@ -26,4 +27,5 @@ router.post(
 
 router.post('/login', loginUser);
 router.get('/logout', verifyJWT, logoutUser);
+router.get('/refresh-token', accessRefreshToken);
 export const user = router;
