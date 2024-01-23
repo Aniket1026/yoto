@@ -3,7 +3,8 @@ import {
   accessRefreshToken,
   loginUser,
   logoutUser,
-  registerUser
+  registerUser,
+  resetPassword
 } from '../controllers/user.controller';
 import { upload } from '../middlewares/multer.middleware';
 import { verifyJWT } from '../middlewares/auth.middleware';
@@ -28,4 +29,5 @@ router.post(
 router.post('/login', loginUser);
 router.get('/logout', verifyJWT, logoutUser);
 router.get('/refresh-token', accessRefreshToken);
+router.post('/reset-password', verifyJWT, resetPassword);
 export const user = router;
