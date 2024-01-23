@@ -167,3 +167,23 @@ export const accessRefreshToken = asyncHandler(
     }
   }
 );
+
+export const resetPassword = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+    const { oldPassword, newPassword } = req.body;
+    const user = req.user;
+    if (!user) {
+      throw new apiError('User not found', 404);
+    }
+
+    const isPasswordCorrect = user?.isPasswordCorrect(oldPassword);
+
+    if (!isPasswordCorrect) throw new apiError('Invalid old password', 400);
+
+    user.password = newPassword;
+    await user?.save({ validateBeforeSave: false });
+    res
+      .status(200)
+      .json(new apiResponse({}, 200, 'Password reset successfully'));
+  }
+);
