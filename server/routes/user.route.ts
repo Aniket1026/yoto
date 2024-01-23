@@ -5,7 +5,8 @@ import {
   loginUser,
   logoutUser,
   registerUser,
-  resetPassword
+  resetPassword,
+  updateUserAvatar
 } from '../controllers/user.controller';
 import { upload } from '../middlewares/multer.middleware';
 import { verifyJWT } from '../middlewares/auth.middleware';
@@ -32,5 +33,6 @@ router.get('/logout', verifyJWT, logoutUser);
 router.get('/refresh-token', accessRefreshToken);
 router.post('/reset-password', verifyJWT, resetPassword);
 router.get('/current-user', verifyJWT, getCurrentUser);
+router.patch('/avatar', verifyJWT, upload.single('avatar'), updateUserAvatar);
 
 export const user = router;

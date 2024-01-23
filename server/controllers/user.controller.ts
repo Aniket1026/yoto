@@ -195,3 +195,29 @@ export const getCurrentUser = asyncHandler(
     res.status(200).json(new apiResponse(user, 200, 'Current user found'));
   }
 );
+
+export const updateUserAvatar = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+    const avatarLocalPath = req.file?.path;
+    if (!avatarLocalPath) throw new apiError('avatar file is missing', 400);
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    if (!avatar?.url) {
+      throw new apiError('error in cloudinary upload ', 400);
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set: {
+          avatar: avatar.url
+        }
+      },
+      { new: true }
+    ).select('-password');
+
+    res
+      .status(201)
+      .json(new apiResponse(user, 201, 'avatar has been updated succesfully'));
+  }
+);
