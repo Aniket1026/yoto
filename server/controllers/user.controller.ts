@@ -187,3 +187,11 @@ export const resetPassword = asyncHandler(
       .json(new apiResponse({}, 200, 'Password reset successfully'));
   }
 );
+
+export const getCurrentUser = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+    const user = req.user;
+    if (!user) throw new apiError('User not found', 403);
+    res.status(200).json(new apiResponse(user, 200, 'Current user found'));
+  }
+);
