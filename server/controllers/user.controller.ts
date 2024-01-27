@@ -249,3 +249,71 @@ export const updateUserCoverImage = asyncHandler(
       );
   }
 );
+
+export const getUserChannelDetails = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+    const { username } = req.params;
+    if (!username) throw new apiError('username not found', 404);
+
+    const channelInfo = await User.aggregate([
+      { 
+        $match: {
+          username: username?.toLocaleLowerCase()
+        }
+      },
+      {
+        $lookup: {
+          from: 'subscriptions',
+          localField: '_id',
+          foreignField: 'channel',
+          as: 'subscribers'
+        }
+      },
+      {
+        $lookup: {
+          from: 'subscriptions',
+          localField: '_id',
+          foreignField: 'subscriber',
+          as: 'subscribedTo'
+        }
+      },
+      {
+        $addFields: {
+          subscribersCount: {
+            $size: 'subscribers'
+          },
+          subscribedToCount: {
+            $size: 'subscribedTo'
+          },
+          isSubscribed: {
+            $cond: {
+              if: { $in: [req.user?.id, '$subscribers.subscriber'] },
+              then: true,
+              else: false
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          fullname: 1,
+          username: 1,
+          email: 1,
+          avatar: 1,
+          coverImage: 1,
+          subscribersCount: 1,
+          subscribedToCount: 1,
+          isSubscribed: 1
+        }
+      }
+    ]);
+
+    if (!channelInfo?.length) {
+      throw new apiError('channel Info not found', 400);
+    }
+
+    res
+      .status(200)
+      .json(new apiResponse(channelInfo[0], 200, 'channel info found'));
+  }
+);

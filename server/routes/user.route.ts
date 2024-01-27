@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   accessRefreshToken,
   getCurrentUser,
+  getUserChannelDetails,
   loginUser,
   logoutUser,
   registerUser,
@@ -41,5 +42,7 @@ router.patch(
   upload.single('coverImage'),
   updateUserCoverImage
 );
+
+router.get('/channel/:username', verifyJWT, getUserChannelDetails);
 
 export const user = router;
