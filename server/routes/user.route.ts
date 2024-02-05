@@ -3,6 +3,7 @@ import {
   accessRefreshToken,
   getCurrentUser,
   getUserChannelDetails,
+  getWatchHistory,
   loginUser,
   logoutUser,
   registerUser,
@@ -44,5 +45,6 @@ router.patch(
 );
 
 router.get('/channel/:username', verifyJWT, getUserChannelDetails);
+router.get('/watch-history', verifyJWT, getWatchHistory);
 
 export const user = router;
