@@ -28,10 +28,23 @@ export const publishVideo = asyncHandler(
       description,
       videoFile: video?.url,
       thumbnail: thumbnail?.url,
-      duration : video?.duration
+      duration: video?.duration
     });
 
     await newVideo.save();
     res.status(201).json(new apiResponse(newVideo, 201, 'Video published'));
+  }
+);
+
+export const getSingleVideo = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+
+    const { videoId } = req.params;
+    if (!videoId) throw new apiError('Video ID is required', 400);
+
+    const video = await Video.findById(videoId).populate('owner', 'username');
+    if (!video) throw new apiError('Video not found', 404);
+
+    res.status(200).json(new apiResponse(video, 200, 'Video retrieved'));
   }
 );
