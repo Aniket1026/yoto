@@ -23,6 +23,7 @@ export const publishVideo = asyncHandler(
     const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
 
     const newVideo = new Video({
+      owner: req.user?._id,
       title,
       description,
       videoFile: video?.url,
