@@ -6,6 +6,13 @@ import { UserRequest } from '../interfaces/request.interface';
 import { Video } from '../models/video.model';
 import { uploadOnCloudinary } from '../utils/cloudinary';
 
+const isUserOwner = async (userId: string, req: UserRequest) => {
+  const video = await Video.findById(userId);
+  if (!video) throw new apiError('Video not found', 404);
+
+  return video.owner.toString() === req.user?._id.toString();
+};
+
 export const publishVideo = asyncHandler(
   async (req: UserRequest, res: Response) => {
     const { title, description } = req.body;
@@ -38,7 +45,6 @@ export const publishVideo = asyncHandler(
 
 export const getSingleVideo = asyncHandler(
   async (req: UserRequest, res: Response) => {
-
     const { videoId } = req.params;
     if (!videoId) throw new apiError('Video ID is required', 400);
 
@@ -46,5 +52,45 @@ export const getSingleVideo = asyncHandler(
     if (!video) throw new apiError('Video not found', 404);
 
     res.status(200).json(new apiResponse(video, 200, 'Video retrieved'));
+  }
+);
+
+export const updateVideo = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+    const { videoId } = req.params;
+
+    const video = await Video.findById(videoId);
+    if (!video) throw new apiError('Video not found', 404);
+
+    const { title, description } = req.body;
+    if (!title || !description)
+      throw new apiError('Title and description are required', 400);
+
+    const authorizedUser = await isUserOwner(videoId, req);
+    if (!authorizedUser) throw new apiError('Unauthorized user', 401);
+
+    const thumbnailLocalPath = req.file?.path;
+    if (!thumbnailLocalPath) throw new apiError('Thumbnail is required', 400);
+
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+    // delete the previous thumbnail
+
+    const updatedVideo = await Video.findByIdAndUpdate(
+      video,
+      {
+        $set: {
+          title,
+          description,
+          thumbnail: thumbnail?.url
+        }
+      },
+      {
+        new: true
+      }
+    );
+
+    res
+      .status(200)
+      .json(new apiResponse(updatedVideo, 200, 'Video updated successfully'));
   }
 );
