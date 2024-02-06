@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { verifyJWT } from '../middlewares/auth.middleware';
-import { getSingleVideo, publishVideo } from '../controllers/video.controller';
+import {
+  getSingleVideo,
+  publishVideo,
+  updateVideo
+} from '../controllers/video.controller';
 import { upload } from '../middlewares/multer.middleware';
 
 export const router = Router();
@@ -18,9 +22,14 @@ router.post(
       maxCount: 1
     }
   ]),
-publishVideo
+  publishVideo
 );
 
 router.get('/video/:videoId', verifyJWT, getSingleVideo);
-
+router.patch(
+  '/video/:videoId',
+  verifyJWT,
+  upload.single('thumbnail'),
+  updateVideo
+);
 export const video = router;
