@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { connectDB } from './db/db';
 import { user } from './routes/user.route';
 import { video } from './routes/video.route';
+import { playlist } from './routes/playlist.route';
 
 config();
 const app = express();
@@ -18,8 +19,9 @@ app.use(
   })
 );
 
-app.use('/api/v1', user)
-app.use('/api/v1', video );
+app.use('/api/v1', user);
+app.use('/api/v1', video);
+app.use('/api/v1', playlist);
 
 connectDB().then(() => {
   app.listen(process.env.PORT, () => {
