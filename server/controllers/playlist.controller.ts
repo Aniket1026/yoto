@@ -79,3 +79,32 @@ export const getSinglePlaylist = asyncHandler(
     res.status(200).json(new apiResponse(playlist, 200, 'Playlist retrieved'));
   }
 );
+
+export const getAllPlaylists = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { channel } = req.params;
+
+    const playlists = await Playlist.aggregate([
+      {
+        $match: {
+          owner: new mongoose.Types.ObjectId(channel)
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          description: 1,
+          owner: 1,
+          createdAt: 1,
+          updatedAt: 1
+        }
+      }
+    ]);
+
+    if (!playlists) throw new apiError('No playlist found', 404);
+
+    res
+      .status(200)
+      .json(new apiResponse(playlists, 200, 'Playlists retrieved'));
+  }
+);
