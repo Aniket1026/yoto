@@ -12,6 +12,6 @@ export const router = Router();
 router.post('/playlist', verifyJWT, createPlaylist);
 router.get('/playlist/:playlistId', verifyJWT, getSinglePlaylist);
 router.get('/:channel/playlists', verifyJWT, getAllPlaylists);
-router.post('/playlist/:playlistId/:videoId', verifyJWT, addVideoToPlaylist);
+router.patch('/playlist/:playlistId/:videoId', verifyJWT, addVideoToPlaylist);
 
 export const playlist = router;
