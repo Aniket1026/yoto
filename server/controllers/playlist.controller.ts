@@ -181,3 +181,49 @@ export const addVideoToPlaylist = asyncHandler(
     }
   }
 );
+
+export const removeVideoFromPlaylist = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+    try {
+      const { playlistId, videoId } = req.params;
+      if (!playlistId) throw new apiError('PlaylistId is required', 403);
+      if (!videoId) throw new apiError('VideoId is required', 403);
+
+      const checkOwner: boolean = await isUserPlaylistOwner(
+        req.user?._id,
+        playlistId
+      );
+      if (!checkOwner)
+        throw new apiError('You are not the owner of the playlist', 400);
+
+      const playlist = await Playlist.findById(playlistId);
+      if (!playlist) throw new apiError('Playlist not found', 403);
+
+      const video = await Video.findById(videoId);
+      if (!video) throw new apiError('Video not found', 403);
+
+      const updatedPlaylist = await Playlist.findByIdAndUpdate(
+        { _id: playlistId },
+        {
+          $pull: {
+            videos: videoId
+          }
+        },
+        {
+          new: true
+        }
+      );
+
+      res
+        .status(200)
+        .json(
+          new apiResponse(updatedPlaylist, 200, 'video removed successfully')
+        );
+    } catch (error) {
+      throw new apiError(
+        'Error in removing video from playlist' + (error as Error).message,
+        500
+      );
+    }
+  }
+);
