@@ -5,6 +5,23 @@ import { UserRequest } from '../interfaces/request.interface';
 import { Playlist } from '../models/playlist.model';
 import { apiResponse } from '../utils/apiResponse';
 import mongoose from 'mongoose';
+import { Video } from '../models/video.model';
+
+const isUserPlaylistOwner = async (userId: string, playlistId: string) => {
+  try {
+    const playlist = await Playlist.findById(playlistId);
+    if (!playlist) throw new apiError('Playlist not found', 404);
+
+    if (playlist.owner.toString() !== userId.toString())
+      throw new apiError('You are not the owner of this playlist', 403);
+    return true;
+  } catch (error) {
+    throw new apiError(
+      'Error in is user owner ' + (error as Error).message,
+      500
+    );
+  }
+};
 
 export const createPlaylist = asyncHandler(
   async (req: UserRequest, res: Response) => {
@@ -106,5 +123,61 @@ export const getAllPlaylists = asyncHandler(
     res
       .status(200)
       .json(new apiResponse(playlists, 200, 'Playlists retrieved'));
+  }
+);
+
+export const addVideoToPlaylist = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+    try {
+      const { playlistId, videoId } = req.body;
+      if (!playlistId) throw new apiError('Playlist ID is required', 400);
+      if (!videoId) throw new apiError('Video ID is required', 400);
+
+      const playlist = await Playlist.findById(playlistId);
+      if (!playlist) throw new apiError('Playlist not found', 404);
+
+      const checkOwner: boolean = await isUserPlaylistOwner(
+        req.user?._id,
+        playlistId
+      );
+
+      if (!checkOwner)
+        throw new apiError('You are not the owner of this playlist', 403);
+
+      const video = await Video.findById(videoId);
+      if (!video) throw new apiError('Video not found', 404);
+
+      if (playlist.video.includes(videoId))
+        throw new apiError('Video already in playlist', 400);
+
+      const addToPlaylist = await Playlist.findByIdAndUpdate(
+        {
+          _id: playlistId
+        },
+        {
+          $push: {
+            video: videoId
+          }
+        },
+        {
+          new: true
+        }
+      );
+
+      if (!addToPlaylist)
+        throw new apiError('Video not added to playlist', 400);
+
+      res
+        .status(200)
+        .json(
+          new apiResponse(
+            addToPlaylist,
+            200,
+            'Video added to playlist successfully'
+          )
+        );
+    } catch (error) {
+      throw new apiError('Error in adding video to playlist', 500);
+    }
   }
 );
