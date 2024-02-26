@@ -4,8 +4,9 @@ import { apiError } from '../utils/apiError';
 import { UserRequest } from '../interfaces/request.interface';
 import { Playlist } from '../models/playlist.model';
 import { apiResponse } from '../utils/apiResponse';
-import mongoose from 'mongoose';
+import mongoose, { isValidObjectId } from 'mongoose';
 import { Video } from '../models/video.model';
+import { playlist } from '../routes/playlist.route';
 
 const isUserPlaylistOwner = async (userId: string, playlistId: string) => {
   try {
@@ -222,6 +223,58 @@ export const removeVideoFromPlaylist = asyncHandler(
     } catch (error) {
       throw new apiError(
         'Error in removing video from playlist' + (error as Error).message,
+        500
+      );
+    }
+  }
+);
+
+export const updatePlaylist = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+    const { playlistId } = req.params;
+    if (!playlistId || isValidObjectId(playlistId))
+      throw new apiError('playlist ID not provided or invalid', 403);
+    const playlist = await Playlist.findById(playlistId);
+
+    try {
+      const { name, description } = req.body;
+      if (!name || !description)
+        throw new apiError('required fields are missing', 403);
+
+      const checkOwner: boolean = await isUserPlaylistOwner(
+        req.user?._id,
+        playlistId
+      );
+      if (!checkOwner)
+        throw new apiError('You are not the owner of the playlist', 403);
+
+      const updatedPlaylist = await playlist.findByIdAndUpdate(
+        { _id: playlistId },
+        {
+          $set: {
+            name,
+            description
+          }
+        },
+        {
+          new: true
+        }
+      );
+
+      if (!updatedPlaylist) throw new apiError('Error in playList update', 403);
+
+      res
+        .status(200)
+        .json(
+          new apiResponse(
+            updatedPlaylist,
+            200,
+            'Playlist has been updated successfully'
+          )
+        );
+    } catch (error) {
+      throw new apiError(
+        'Error in playlist update' + (error as Error).message,
         500
       );
     }
