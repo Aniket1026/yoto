@@ -6,7 +6,6 @@ import { Playlist } from '../models/playlist.model';
 import { apiResponse } from '../utils/apiResponse';
 import mongoose, { isValidObjectId } from 'mongoose';
 import { Video } from '../models/video.model';
-import { playlist } from '../routes/playlist.route';
 
 const isUserPlaylistOwner = async (userId: string, playlistId: string) => {
   try {
@@ -65,27 +64,19 @@ export const getSinglePlaylist = asyncHandler(
         }
       },
       {
+        $lookup: {
+          from: 'videos',
+          localField: 'video',
+          foreignField: '_id',
+          as: 'videos'
+        }
+      },
+      {
         $project: {
           name: 1,
           description: 1,
           owner: 1,
-          video: {
-            $cond: {
-              if: {
-                $eq: ['$owner', [new mongoose.Types.ObjectId(req?.user?._id)]]
-              },
-              then: '$video',
-              else: {
-                $filter: {
-                  input: '$video',
-                  as: 'video',
-                  cond: {
-                    $eq: ['$video.isPublished', true]
-                  }
-                }
-              }
-            }
-          },
+          videos: 1,
           createdAt: 1,
           updatedAt: 1
         }
@@ -94,7 +85,9 @@ export const getSinglePlaylist = asyncHandler(
 
     if (!playlist) throw new apiError('Playlist not found', 404);
 
-    res.status(200).json(new apiResponse(playlist, 200, 'Playlist retrieved'));
+    res
+      .status(200)
+      .json(new apiResponse(playlist[0], 200, 'Playlist retrieved'));
   }
 );
 
@@ -130,7 +123,7 @@ export const getAllPlaylists = asyncHandler(
 export const addVideoToPlaylist = asyncHandler(
   async (req: UserRequest, res: Response) => {
     try {
-      const { playlistId, videoId } = req.body;
+      const { playlistId, videoId } = req.params;
       if (!playlistId) throw new apiError('Playlist ID is required', 400);
       if (!videoId) throw new apiError('Video ID is required', 400);
 
@@ -153,7 +146,7 @@ export const addVideoToPlaylist = asyncHandler(
 
       const addToPlaylist = await Playlist.findByIdAndUpdate(
         {
-          _id: playlistId
+          _id: new mongoose.Types.ObjectId(playlistId)
         },
         {
           $push: {
@@ -178,7 +171,7 @@ export const addVideoToPlaylist = asyncHandler(
           )
         );
     } catch (error) {
-      throw new apiError('Error in adding video to playlist', 500);
+      throw new apiError('Error in adding video to playlist' + error, 500);
     }
   }
 );
