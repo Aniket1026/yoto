@@ -5,6 +5,7 @@ import { apiResponse } from '../utils/apiResponse';
 import { UserRequest } from '../interfaces/request.interface';
 import { Video } from '../models/video.model';
 import { uploadOnCloudinary } from '../utils/cloudinary';
+import { Playlist } from '../models/playlist.model';
 
 const isUserOwner = async (userId: string, req: UserRequest) => {
   const video = await Video.findById(userId);
@@ -92,5 +93,35 @@ export const updateVideo = asyncHandler(
     res
       .status(200)
       .json(new apiResponse(updatedVideo, 200, 'Video updated successfully'));
+  }
+);
+
+export const removeVideo = asyncHandler(
+  async (req: UserRequest, res: Response) => {
+    const { videoId } = req.params;
+    if (!videoId) throw new apiError('Video ID is required', 400);
+
+    let authorizedUser = await isUserOwner(videoId, req);
+    if (!authorizedUser) throw new apiError('Unauthorized user', 401);
+
+    const video = await Video.findByIdAndDelete(videoId);
+    if (!video) throw new apiError('Video not found', 404);
+
+    const playlists = await Playlist.find({ videos: videoId });
+    for (const playlist of playlists) {
+      await Playlist.findByIdAndUpdate(
+        playlist._id,
+        {
+          $pull: { videos: videoId }
+        },
+        {
+          new: true
+        }
+      );
+    }
+    
+    res
+      .status(200)
+      .json(new apiResponse({}, 200, 'Video Deleted Successfully'));
   }
 );

@@ -3,6 +3,7 @@ import { verifyJWT } from '../middlewares/auth.middleware';
 import {
   getSingleVideo,
   publishVideo,
+  removeVideo,
   updateVideo
 } from '../controllers/video.controller';
 import { upload } from '../middlewares/multer.middleware';
@@ -32,4 +33,6 @@ router.patch(
   upload.single('thumbnail'),
   updateVideo
 );
+
+router.delete('/video/:videoId', verifyJWT, removeVideo);
 export const video = router;
